@@ -38,10 +38,16 @@ public class HDFSReadTest3Controller {
 
                     // 读取文件内容
                     byte[] buffer = new byte[1024];
-                    int bytesRead = inputStream.read(buffer);
+                    int bytesRead;
+                    StringBuilder fileContentBuilder = new StringBuilder();
 
-                    // 将字节数组转换为字符串
-                    String fileContent = new String(buffer, 0, bytesRead);
+                    while ((bytesRead = inputStream.read(buffer)) != -1) {
+                        // 将读取的字节追加到字符串构建器中
+                        fileContentBuilder.append(new String(buffer, 0, bytesRead));
+                    }
+
+                    // 将字符串构建器转换为最终的文件内容字符串
+                    String fileContent = fileContentBuilder.toString();
 
                     // 关闭流
                     inputStream.close();
