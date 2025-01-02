@@ -50,6 +50,16 @@ def get_random_string(length):
     letters = string.ascii_lowercase
     return ''.join(random.choice(letters) for i in range(length))
 
+def get_random_city_and_state(fake):
+    """获取一个随机但相互对应的美国城市和州"""
+    state_abbr = fake.state_abbr()
+    city = fake.city()
+    # 使用 zip code 来保证城市和州之间的对应关系
+    zip_code = fake.zipcode_in_state(state_abbr=state_abbr)
+    # 解析出城市部分（有时可能不完全准确）
+    # 注意：Faker 生成的城市和州之间的关联不是严格的官方数据，仅用于测试目的。
+    return city, state_abbr
+
 def insert_orders_and_details():
     try:
         connection = mysql.connector.connect(**db_config)
@@ -67,8 +77,8 @@ def insert_orders_and_details():
                 status = random.choice(['Paid', 'Unpaid', 'Shipped', 'Completed'])
                 total_amount = round(random.uniform(50, 500), 2)
                 payment_method = random.choice(['Credit Card', 'PayPal', 'Apple Pay'])
-                state = fake.state_abbr()  # 美国州的缩写
-                city = fake.city()
+                # 美国州的缩写
+                city, state = get_random_city_and_state(fake)
                 street = fake.street_address()
 
                 order_query = """

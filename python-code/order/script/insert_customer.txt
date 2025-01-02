@@ -1,0 +1,82 @@
+{
+    "job": {
+        "content": [
+            {
+                "reader": {
+                    "name": "mysqlreader",
+                    "parameter": {
+                        "username": "root",  // MySQL 用户名
+                        "password": "Musem!@#20200217&*",  // MySQL 密码
+                        "column": ["id", "email", "phone_number", "create_time", "province", "city"],
+                        "connection": [
+                            {
+                                "jdbcUrl": ["jdbc:mysql://192.168.110.150:3306/test"],  // MySQL 数据库连接字符串
+                                "table": ["customer"]
+                            }
+                        ],
+                        "where": "DATE(create_time) = '${bizdate}'"  // 根据业务日期过滤
+                    }
+                },
+                "writer": {
+                    "name": "hdfswriter",
+                    "parameter": {
+                        "defaultFS": "192.168.110.26",  // HDFS 名称节点地址
+                        "fileType": "text",  // 文件类型
+                        "path": "/root/hive/warehouse/test.db/customer/dt=${bizdate}",  // 指定Hive表的路径和分区
+                        "fileName": "customer_${bizdate}",
+                        "writeMode": "overwrite",  // 写入模式
+                        "column": [
+                            {"name": "id", "type": "long"},
+                            {"name": "email", "type": "string"},
+                            {"name": "phone_number", "type": "string"},
+                            {"name": "create_time", "type": "string"},
+                            {"name": "province", "type": "string"},
+                            {"name": "city", "type": "string"}
+                        ]
+                    }
+                }
+            }
+        ],
+        "setting": {
+            "speed": {
+                "channel": 3  // 并行度设置
+            }
+        }
+    }
+}
+
+
+
+CREATE TABLE IF NOT EXISTS test.customer (
+    id BIGINT COMMENT '主键',
+    email STRING COMMENT '客户的电子邮件地址，作为客户标识',
+    phone_number STRING COMMENT '客户的电话号码',
+    create_time TIMESTAMP COMMENT '订单日期，默认当前时间',
+    province STRING COMMENT '省份',
+    city STRING COMMENT '城市'
+)
+COMMENT '用户表'
+PARTITIONED BY (dt STRING) -- 如果你想按日期进行分区，可以添加这一行
+CLUSTERED BY (id) INTO 256 BUCKETS -- 如果你需要对数据进行分桶，可以添加这一行
+STORED AS ORC; -- 指定存储格式为 ORC，它是一个高效的列式存储格式
+
+
+
+CREATE TABLE IF NOT EXISTS test.customer (
+    id BIGINT COMMENT '主键',
+    email STRING COMMENT '客户的电子邮件地址，作为客户标识',
+    phone_number STRING COMMENT '客户的电话号码',
+    create_time TIMESTAMP COMMENT '订单日期，默认当前时间',
+    province STRING COMMENT '省份',
+    city STRING COMMENT '城市'
+)
+COMMENT '用户表'
+PARTITIONED BY (dt STRING)
+STORED AS ORC;
+
+
+
+
+
+ALTER TABLE test.customer ADD PARTITION (dt='2024-12-31');
+ALTER TABLE test.customer ADD PARTITION (dt='2024-12-30');
