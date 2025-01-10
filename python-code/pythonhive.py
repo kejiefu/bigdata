@@ -20,7 +20,7 @@ mysql_connection = pymysql.connect(host=mysql_host, user=mysql_user, password=my
 mysql_cursor = mysql_connection.cursor()
 
 # Execute MySQL query to fetch data from testtable2
-mysql_query = "SELECT * FROM testt1"
+mysql_query = "SELECT * FROM test"
 mysql_cursor.execute(mysql_query)
 mysql_data = mysql_cursor.fetchall()
 for x in mysql_data:
@@ -40,20 +40,20 @@ for row in mysql_data:
     value = row[1]
 
     # Check if data exists in Hive
-    hive_query = f"SELECT entity_id FROM testt1 WHERE entity_id = '{id_value}'"
+    hive_query = f"SELECT id FROM test WHERE id = '{id_value}'"
     hive_cursor.execute(hive_query)
     hive_result = hive_cursor.fetchall()
 
     if len(hive_result) > 0:
         print("EXISTS start ")
 
-        print("email=" + value + "，entity_id=" + id_value)
+        print("email=" + value + ",id=" + id_value)
 
         print("EXISTS over")
     else:
         print("INSERT start ")
         # Data doesn't exist, insert into Hive
-        hive_insert_query = f"INSERT INTO testt1 (entity_id, email) VALUES ('{id_value}', '{value}')"
+        hive_insert_query = f"INSERT INTO test (id, value) VALUES ('{id_value}', '{value}')"
         hive_cursor.execute(hive_insert_query)
         print("INSERT over")
 

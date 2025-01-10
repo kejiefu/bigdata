@@ -1,0 +1,41 @@
+-- 设置分桶数量
+SET hive.enforce.bucketing = true;
+SET hive.exec.dynamic.partition.mode=nonstrict;
+
+-- 创建 customer_order 表并按 create_date 分区，按 order_id 分桶
+CREATE TABLE IF NOT EXISTS ods_customer_order (
+  order_id BIGINT COMMENT '订单ID',
+  email STRING COMMENT '客户的电子邮件地址，作为客户标识',
+  phone_number STRING COMMENT '客户的电话号码',
+  create_time TIMESTAMP COMMENT '订单日期，默认当前时间', -- 确保保留了create_time字段
+  status STRING COMMENT '订单状态，例如：已支付, 未支付, 已发货, 已完成',
+  total_amount DECIMAL(10,2) COMMENT '订单总金额',
+  payment_method STRING COMMENT '支付方式',
+  province STRING COMMENT '收货省份',
+  city STRING COMMENT '收货城市',
+  street STRING COMMENT '收货街道详细信息'
+)
+COMMENT '存储所有订单信息的表'
+PARTITIONED BY (create_date STRING COMMENT '分区字段，订单创建日期')
+CLUSTERED BY (order_id) INTO 32 BUCKETS -- 假设我们使用32个桶
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY '\t'
+STORED AS ORC; -- 使用ORC文件格式以优化读写性能
+
+
+-- 创建 customer_order_detail 表并按 create_date 分区，按 order_id 分桶
+CREATE TABLE IF NOT EXISTS ods_customer_order_detail (
+  detail_id STRING COMMENT '明细ID',
+  order_id BIGINT COMMENT '订单ID', -- 确保 order_id 字段也存在于明细表中
+  product_name STRING COMMENT '商品的名称',
+  quantity INT COMMENT '数量',
+  price DECIMAL(10,2) COMMENT '单价',
+  discount DECIMAL(4,2) COMMENT '折扣',
+  create_time TIMESTAMP COMMENT '订单日期，默认当前时间'
+)
+COMMENT '存储订单中每个商品的详细信息'
+PARTITIONED BY (create_date STRING COMMENT '分区字段，与主表一致')
+CLUSTERED BY (order_id) INTO 32 BUCKETS -- 假设我们使用32个桶
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY '\t'
+STORED AS ORC; -- 使用ORC文件格式以优化读写性能

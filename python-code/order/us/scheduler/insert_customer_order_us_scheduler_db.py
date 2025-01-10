@@ -82,7 +82,7 @@ def insert_orders_and_details():
                 street = fake.street_address()
 
                 order_query = """
-                INSERT INTO customer_order (order_id, email, phone_number, order_date, status, total_amount, payment_method, province, city, street)
+                INSERT INTO customer_order (order_id, email, phone_number, create_time, status, total_amount, payment_method, province, city, street)
                 VALUES (%s, %s, %s, NOW(), %s, %s, %s, %s, %s, %s)
                 """
                 order_values = (order_id, email, phone_number, status, total_amount, payment_method, state, city, street)
