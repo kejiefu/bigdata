@@ -1,0 +1,42 @@
+customer
+
+工作流名称：customer数据清洗
+
+1：mysql 每天插入customer
+customer数据插入mysql
+
+python3 /dolphinscheduler/default/resources/test/insert_customer_us_mysql_db.py ${date}
+
+2：hive 调用python脚本创建分区
+customer创建hive的分区
+
+python3 /dolphinscheduler/default/resources/test/create_hive_partition.py ${table_name} ${partition_column} ${date}
+
+3：hive 调用dataX 同步数据进入 ods_customer
+customer数据导入hive
+
+sudo -u hadoop  -i python /opt/datax/bin/datax.py /opt/datax/job/test/insert_customer.json -p "-Dbizdate=${date}"
+
+
+
+order
+
+工作流名称：order数据清洗
+
+1：mysql 每天插入order
+order数据插入mysql
+
+python3 /dolphinscheduler/default/resources/test/insert_customer_order_us_mysql_db.py ${date}
+
+2：hive 调用python脚本创建分区
+order创建hive的分区
+order_detail创建hive的分区
+
+python3 /dolphinscheduler/default/resources/test/create_hive_partition.py ${table_name} ${partition_column} ${date}
+
+3：hive 调用dataX 同步数据进入 ods_customer
+order数据导入hive
+order_detail数据导入hive
+
+sudo -u hadoop  -i  python /opt/datax/bin/datax.py /opt/datax/job/test/insert_customer_order.json -p "-Dbizdate=${date}"
+sudo -u hadoop  -i  python /opt/datax/bin/datax.py /opt/datax/job/test/insert_customer_order_detail.json -p "-Dbizdate=${date}"

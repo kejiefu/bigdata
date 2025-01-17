@@ -7,11 +7,22 @@
                     "parameter": {
                         "username": "root",
                         "password": "Musem!@#20200217&*",
-                        "column": ["id", "email", "phone_number", "create_time", "province", "city"],
+                        "column": [
+                            "order_id",
+                            "email",
+                            "phone_number",
+                            "create_time",
+                            "status",
+                            "total_amount",
+                            "payment_method",
+                            "province",
+                            "city",
+                            "street"
+                        ],
                         "connection": [
                             {
                                 "jdbcUrl": ["jdbc:mysql://192.168.110.150:3306/test"],
-                                "table": ["customer"]
+                                "table": ["customer_order"]
                             }
                         ],
                         "where": "DATE_FORMAT(create_time, '%Y%m%d') = '${bizdate}'"
@@ -22,17 +33,21 @@
                     "parameter": {
                         "defaultFS": "hdfs://192.168.110.26:9000",
                         "fileType": "orc",
-                        "path": "/root/hive/warehouse/test.db/ods_customer/dt=${bizdate}",
-                        "fileName": "ods_customer_${bizdate}",
+                        "path": "/root/hive/warehouse/test.db/ods_customer_order/dt=${bizdate}",
+                        "fileName": "ods_customer_order_${bizdate}",
                         "writeMode": "truncate",
                         "fieldDelimiter": "\t",
                         "column": [
-                            {"name": "id", "type": "bigint"},
+                            {"name": "order_id", "type": "bigint"},
                             {"name": "email", "type": "string"},
                             {"name": "phone_number", "type": "string"},
-                            {"name": "create_time", "type": "string"},
+                            {"name": "create_time", "type": "timestamp"},
+                            {"name": "status", "type": "string"},
+                            {"name": "total_amount", "type": "int"},
+                            {"name": "payment_method", "type": "string"},
                             {"name": "province", "type": "string"},
-                            {"name": "city", "type": "string"}
+                            {"name": "city", "type": "string"},
+                            {"name": "street", "type": "string"}
                         ]
                     }
                 }

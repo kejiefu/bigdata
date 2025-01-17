@@ -1,6 +1,5 @@
--- 设置分桶数量
-SET hive.enforce.bucketing = true;
-SET hive.exec.dynamic.partition.mode=nonstrict;
+---- dataX导入hdfs不支持decimal类型
+
 
 -- 创建 customer_order 表并按 create_date 分区，按 order_id 分桶
 CREATE TABLE IF NOT EXISTS ods_customer_order (
@@ -9,15 +8,15 @@ CREATE TABLE IF NOT EXISTS ods_customer_order (
   phone_number STRING COMMENT '客户的电话号码',
   create_time TIMESTAMP COMMENT '订单日期，默认当前时间', -- 确保保留了create_time字段
   status STRING COMMENT '订单状态，例如：已支付, 未支付, 已发货, 已完成',
-  total_amount DECIMAL(10,2) COMMENT '订单总金额',
+  total_amount int COMMENT '订单总金额',
   payment_method STRING COMMENT '支付方式',
   province STRING COMMENT '收货省份',
   city STRING COMMENT '收货城市',
   street STRING COMMENT '收货街道详细信息'
 )
 COMMENT '存储所有订单信息的表'
-PARTITIONED BY (create_date STRING COMMENT '分区字段，订单创建日期')
-CLUSTERED BY (order_id) INTO 32 BUCKETS -- 假设我们使用32个桶
+PARTITIONED BY (dt STRING COMMENT '分区字段，订单创建日期')
+CLUSTERED BY (order_id) INTO 4 BUCKETS -- 假设我们使用32个桶
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS ORC; -- 使用ORC文件格式以优化读写性能
@@ -29,13 +28,17 @@ CREATE TABLE IF NOT EXISTS ods_customer_order_detail (
   order_id BIGINT COMMENT '订单ID', -- 确保 order_id 字段也存在于明细表中
   product_name STRING COMMENT '商品的名称',
   quantity INT COMMENT '数量',
-  price DECIMAL(10,2) COMMENT '单价',
-  discount DECIMAL(4,2) COMMENT '折扣',
+  price int COMMENT '单价',
+  discount int COMMENT '折扣',
   create_time TIMESTAMP COMMENT '订单日期，默认当前时间'
 )
 COMMENT '存储订单中每个商品的详细信息'
-PARTITIONED BY (create_date STRING COMMENT '分区字段，与主表一致')
-CLUSTERED BY (order_id) INTO 32 BUCKETS -- 假设我们使用32个桶
+PARTITIONED BY (dt STRING COMMENT '分区字段，与主表一致')
+CLUSTERED BY (order_id) INTO 4 BUCKETS -- 假设我们使用32个桶
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS ORC; -- 使用ORC文件格式以优化读写性能
+
+
+
+sqoop import -Dmapreduce.job.user.classpath.first=true -m 1 --connect "jdbc:mysql://poviosn-bak-db.cvv1nvcrziw7.us-west-2.rds.amazonaws.com:3306/magento2?allowLoadLocalInfile=false&autoDeserialize=false&allowLocalInfile=false&allowUrlInLocalInfile=false" --username admin --password "HsL5XyPkjd9u5huZSWja" --table catalog_category_entity --target-dir /data/dw/ups/ods/full_imp/catalog_category_entity --as-avrodatafile

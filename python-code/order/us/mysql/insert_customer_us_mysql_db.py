@@ -10,10 +10,10 @@ import time
 
 # 获取命令行参数
 try:
-    randomNumber = int(sys.argv[1]) if len(sys.argv) > 1 else 50  # 默认值为50
+    random_number = int(sys.argv[1]) if len(sys.argv) > 1 else random.randint(1000, 3000)  # 默认值随机数
 except IndexError:
-    randomNumber = 50
-print("Will insert {} customers.".format(randomNumber))
+    random_number = 50
+print("Will insert {} customers.".format(random_number))
 
 # 初始化Faker对象，使用美国本地化设置
 fake = Faker(['en_US'])
@@ -25,7 +25,6 @@ db_config = {
     'password': 'Musem!@#20200217&*',
     'database': 'test'
 }
-
 
 def get_random_city_and_state(fake):
     """获取一个随机但相互对应的美国城市和州"""
@@ -78,13 +77,15 @@ class SimpleSnowflakeIDGenerator(object):
 
 def insert_customers():
     try:
+        #**db_config 将这个字典解包，相当于将字典中的键值对作为关键字参数传递给函数
         connection = mysql.connector.connect(**db_config)
         if connection.is_connected():
             cursor = connection.cursor()
             id_generator = SimpleSnowflakeIDGenerator()
+            success_count = 0  # 成功插入的记录计数
 
             # 插入客户信息
-            for _ in range(randomNumber):
+            for _ in range(random_number):
                 customer_id = id_generator.generate_id()
                 email = fake.email()
                 phone_number = fake.phone_number()
@@ -92,14 +93,16 @@ def insert_customers():
                 city, province = get_random_city_and_state(fake)
 
                 customer_query = """
-                INSERT INTO customer (id, email, phone_number, province,city)
+                # IGNORE 数据存在的就忽略
+                INSERT IGNORE INTO customer (id, email, phone_number, province,city)
                 VALUES ({}, '{}', '{}', '{}', '{}')
                 """.format(customer_id, email, phone_number, province, city)
 
                 cursor.execute(customer_query)
                 connection.commit()
+                success_count += cursor.rowcount  # 如果插入成功，则增加计数
 
-            print("{} - 已插入{}个客户".format(time.strftime('%Y-%m-%d %H:%M:%S'), randomNumber))
+            print("{} - 已插入{}个客户".format(time.strftime('%Y-%m-%d %H:%M:%S'), success_count))
 
     except Error as e:
         print("Error while connecting to MySQL", e)

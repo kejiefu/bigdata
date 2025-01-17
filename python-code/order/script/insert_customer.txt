@@ -14,7 +14,7 @@
                                 "table": ["customer"]
                             }
                         ],
-                        "where": "DATE(create_time) = '${bizdate}'"  // 根据业务日期过滤
+                        "where": "DATE_FORMAT(create_time, '%Y%m%d') = '${bizdate}'"  // 根据业务日期过滤
                     }
                 },
                 "writer": {
@@ -22,7 +22,7 @@
                     "parameter": {
                         "defaultFS": "192.168.110.26",  // HDFS 名称节点地址
                         "fileType": "text",  // 文件类型
-                        "path": "/root/hive/warehouse/test.db/customer/dt=${bizdate}",  // 指定Hive表的路径和分区
+                        "path": "/root/hive/warehouse/test.db/ods_customer/dt=${bizdate}",  // 指定Hive表的路径和分区
                         "fileName": "customer_${bizdate}",
                         "writeMode": "overwrite",  // 写入模式
                         "column": [
@@ -47,7 +47,7 @@
 
 
 
-CREATE TABLE IF NOT EXISTS test.customer (
+CREATE TABLE IF NOT EXISTS test.ods_customer (
     id BIGINT COMMENT '主键',
     email STRING COMMENT '客户的电子邮件地址，作为客户标识',
     phone_number STRING COMMENT '客户的电话号码',
@@ -62,7 +62,7 @@ STORED AS ORC; -- 指定存储格式为 ORC，它是一个高效的列式存储�
 
 
 
-CREATE TABLE IF NOT EXISTS test.customer (
+CREATE TABLE IF NOT EXISTS test.ods_customer (
     id BIGINT COMMENT '主键',
     email STRING COMMENT '客户的电子邮件地址，作为客户标识',
     phone_number STRING COMMENT '客户的电话号码',
@@ -78,5 +78,8 @@ STORED AS ORC;
 
 
 
-ALTER TABLE test.customer ADD PARTITION (dt='2024-12-31');
-ALTER TABLE test.customer ADD PARTITION (dt='2024-12-30');
+ALTER TABLE test.ods_customer ADD PARTITION (dt='2024-12-31');
+ALTER TABLE test.ods_customer ADD PARTITION (dt='2024-12-30');
+
+
+#插入hive，插入1条和插入5000条数据的时间是一样的

@@ -11,8 +11,8 @@ from datetime import datetime
 import sys
 
 # 获取命令行参数
-randomNumber = int(sys.argv[1]) if len(sys.argv) > 1 else 50  # 默认值为50
-print("Will insert {} orders.".format(randomNumber))
+random_number = int(sys.argv[1]) if len(sys.argv) > 1 else random.randint(1000, 2000)  # 默认值为随机数
+print("Will insert {} orders.".format(random_number))
 
 # 初始化Faker对象，使用美国本地化设置
 fake = Faker(['en_US'])
@@ -67,7 +67,7 @@ def insert_orders_and_details():
             cursor = connection.cursor()
 
             # 插入订单信息
-            for _ in range(randomNumber):
+            for _ in range(random_number):
                 order_id = generate_order_id()
                 while not check_unique_order_id(cursor, order_id):
                     order_id = generate_order_id()  # 如果ID已存在，则重新生成
@@ -75,7 +75,7 @@ def insert_orders_and_details():
                 email = fake.email()
                 phone_number = fake.phone_number()
                 status = random.choice(['Paid', 'Unpaid', 'Shipped', 'Completed'])
-                total_amount = round(random.uniform(50, 500), 2)
+                total_amount = random.randint(50, 500)
                 payment_method = random.choice(['Credit Card', 'PayPal', 'Apple Pay'])
                 # 美国州的缩写
                 city, state = get_random_city_and_state(fake)
@@ -90,14 +90,14 @@ def insert_orders_and_details():
                 cursor.execute(order_query, order_values)
                 connection.commit()
 
-                # 随机插入1到3个商品详情信息
-                num_products = random.randint(1, 3)
+                # 随机插入1到5个商品详情信息
+                num_products = random.randint(1, 5)
                 for _ in range(num_products):
                     detail_id = get_random_string(20)
                     product_name = random.choice(home_items)  # 使用家居名称代替product_name
                     quantity = random.randint(1, 5)
-                    price = round(random.uniform(10, 100), 2)
-                    discount = round(random.uniform(0, 0.3), 2) if random.random() > 0.5 else None
+                    price = random.randint(20, 100)
+                    discount = random.randint(1, 5)
 
                     detail_query = """
                                     INSERT INTO customer_order_detail (detail_id, order_id, product_name, quantity, price, discount)
