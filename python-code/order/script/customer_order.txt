@@ -39,6 +39,3 @@ ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS ORC; -- 使用ORC文件格式以优化读写性能
 
-
-
-sqoop import -Dmapreduce.job.user.classpath.first=true -m 1 --connect "jdbc:mysql://poviosn-bak-db.cvv1nvcrziw7.us-west-2.rds.amazonaws.com:3306/magento2?allowLoadLocalInfile=false&autoDeserialize=false&allowLocalInfile=false&allowUrlInLocalInfile=false" --username admin --password "HsL5XyPkjd9u5huZSWja" --table catalog_category_entity --target-dir /data/dw/ups/ods/full_imp/catalog_category_entity --as-avrodatafile

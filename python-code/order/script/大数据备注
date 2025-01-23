@@ -1,0 +1,362 @@
+Hadoop：HDFS+Yarn+MapReduce
+Hive
+Spark SQL：DataFrame
+Sqoop
+Azkaban airflow oozie
+Hbase
+地址：
+
+http://192.168.110.26:8088/cluster/nodes
+http://192.168.110.26:50070/explorer.html#/
+http://192.168.110.26:10002/
+
+nohup hive --service metastore &: 这个命令用于启动 Hive 的 Metastore 服务。
+
+Metastore 是 Hive 的元数据存储服务，负责管理 Hive 表结构、分区信息等元数据。通过这个命令，你可以在后台启动 Hive 的 Metastore 服务。Metastore 服务通常用于存储 Hive 表的元数据信息。
+nohup hive --service hiveserver2 &: 这个命令用于启动 Hive 的 HiveServer2 服务。
+
+HiveServer2 是 Hive 的服务端，允许客户端通过 JDBC 或 ODBC 连接来执行 Hive 查询。通过这个命令，你可以在后台启动 Hive 的 HiveServer2 服务，从而允许客户端应用程序连接到 Hive 并执行查询。
+
+
+<!-- 指定HDFS中的hive仓库地址 -->
+  <property>
+    <name>hive.metastore.warehouse.dir</name>
+    <value>/root/hive/warehouse</value>
+  </property>
+
+
+mysql+神策DB->sqoop->ODS->ETL(spark SQL)->DWD->ETL->DWS、DWB->spark SQL + spark ml ALS算法->ADS
+ODS：原始数据  (operation data store)
+
+DWD：处理过的数据（过滤、脱敏、扩展关联字段）   (data warehouse detail)
+
+
+DWM（Data WareHouse Middle）  数据中间层
+
+Data WareHouse Topic  WT是在DWS基础上，再对数据进行累积汇总。
+
+DWS：维度表（宽表）     (data warehouse service)
+DWB：行为事实统计表（时间维度统计、权重分值维度）
+ADS：报表、算法推荐列表     （application data store）
+
+
+在hive中，分区就是分文件夹
+
+
+SET client.encoding=UTF-8;
+SET client.charset=UTF-8;
+
+1001    zhangsan
+1002    lisi
+1003    wangwu
+
+
+python /opt/datax/bin/datax.py /opt/datax/job/mysql.json
+python /opt/datax/bin/datax.py /opt/datax/job/avromysql.json
+python /opt/datax/bin/datax.py /opt/datax/job/orcmysql.json
+python /opt/datax/bin/datax.py /opt/datax/job/customerentity.json
+python /opt/datax/bin/datax.py /opt/datax/job/appendcustomerentity.json
+
+
+sudo su - hadoop;
+
+CREATE TABLE IF NOT EXISTS test.ods_customer (
+    id BIGINT COMMENT '主键',
+    email STRING COMMENT '客户的电子邮件地址，作为客户标识',
+    phone_number STRING COMMENT '客户的电话号码',
+    create_time TIMESTAMP COMMENT '订单日期，默认当前时间',
+    province STRING COMMENT '省份',
+    city STRING COMMENT '城市'
+)
+COMMENT '用户表'
+PARTITIONED BY (dt STRING)
+-- 如果你想按日期进行分区，可以添加这一行
+STORED AS ORC;
+-- 指定存储格式为 ORC，它是一个高效的列式存储格式
+
+
+ALTER TABLE test.customer ADD PARTITION (dt='2024-12-31');
+ALTER TABLE test.customer ADD PARTITION (dt='2025-01-02');
+
+sudo -u hadoop -i python /opt/datax/bin/datax.py /opt/datax/job/test/insert_customer.json -p "-Dbizdate=20250115";
+sudo -u hadoop -i python /opt/datax/bin/datax.py /opt/datax/job/test/insert_customer_order.json -p "-Dbizdate=20250115";
+sudo -u hadoop -i python /opt/datax/bin/datax.py /opt/datax/job/test/insert_customer_order_tail.json -p "-Dbizdate=20250115";
+
+-- 加PURGE 表和hdfs数据都删除
+DROP TABLE test.ods_customer PURGE;
+DROP TABLE test.ods_customer_order PURGE;
+DROP TABLE test.ods_customer_order_detail PURGE;
+
+
+
+==set hive.enforce.bucketing=true;== 开启对分桶表的支持
+
+==set mapreduce.job.reduces=4;== 设置与桶相同的reduce个数（默认只有一个reduce）
+
+查看有多少分区
+
+SHOW PARTITIONS ods_customer;
+
+
+hdfs dfs -chmod -R 777 /root/hive/warehouse/test.db
+
+
+-- 创建数据库 (如果不存在)
+CREATE DATABASE IF NOT EXISTS test;
+
+-- 使用数据库
+USE test;
+
+
+
+
+/opt/datax/bin/datax
+
+sudo su - hadoop
+
+-- 启动hive命令
+/usr/local/hive/bin/hive;
+
+create table test4.test(id string,value string)  row  format  delimited  fields terminated  by  '\t' TBLPROPERTIES ('serialization.encoding'='UTF-8');
+select * from test4.test;
+
+hadoop fs -cat /root/hive/warehouse/test4.db/testtable7/testtable7__ee63682a_6ff1_471d_9d29_0375259d025d
+
+
+create table test4.testtable11(id string,value string) stored as ORC    TBLPROPERTIES ('serialization.encoding'='UTF-8');
+select * from test4.testtable11;
+
+
+create table test4.customerentity(entity_id string,email string) stored as ORC    TBLPROPERTIES ('serialization.encoding'='UTF-8');
+
+hdfs dfs -rm -r writeSequenceFile2
+
+//hive 设置唯一主键
+create table test4.customerentity4(entity_id string,email string,CONSTRAINT pk_id PRIMARY KEY (entity_id) DISABLE NOVALIDATE) stored as ORC TBLPROPERTIES ('serialization.encoding'='UTF-8');
+select * from test4.customerentity4;
+
+
+
+create table test4.testt1(entity_id string,email string) stored as ORC TBLPROPERTIES ('serialization.encoding'='UTF-8');
+
+
+‌Hive不支持修改数据的主要原因‌是因为它被设计为一个数据仓库工具，主要用于大规模数据的批量处理和查询，而不是在线实时数据的操作。Hive基于Hadoop的分布式文件系统HDFS，数据以文件的形式存储在HDFS中，
+而Hive表的结构是通过元数据来定义的，一旦表结构定义好后，就不能进行增删改操作‌。
+
+Hive的设计理念和用途
+Hive提供了一种类似于SQL的查询语言HiveQL，方便对大规模数据进行查询和分析。由于其设计重点在于数据的批量处理和查询，而不是实时数据的修改，因此Hive没有提供对数据的实时修改功能‌。
+
+Hive的工作原理
+Hive将SQL语句翻译成MapReduce任务来执行。它首先解析SQL语法，将SQL转换为语法树，然后遍历语法树找出基本的查询单元，并将其翻译为执行操作树。接着，逻辑层优化器进行执行树变换以减少数据shuffle量，最终翻译为MapReduce任务并执行‌。
+
+替代方案
+对于需要对数据进行增删改操作的情况，可以通过以下步骤来处理：
+
+创建临时表并导入原始数据。
+对临时表进行增删改操作。
+将操作后的数据导出到新表‌。
+
+
+tips1:在hdfs的hive路径下以.db结尾的其实都是实际的数据库
+tips2:默认的default数据库就在hive的家目录
+
+
+
+分区 分桶
+
+海豚调度   增量同步，  全量同步
+
+https://juejin.cn/post/6942297086306025503
+
+分区
+
+create table order_partition(
+order_number string,
+order_price  double,
+order_time string
+)
+partitioned BY(month string)
+row format delimited fields terminated by '\t';
+
+
+10001	100	2019-03-02
+10002	200	2019-03-02
+10003	300	2019-03-02
+10004	400	2019-03-03
+10005	500	2019-03-03
+10006	600	2019-03-03
+10007	700	2019-03-04
+10008	800	2019-03-04
+10009	900	2019-03-04
+
+
+40001	100	2019-04-12
+40002	200	2019-04-12
+40003	300	2019-04-12
+40004	400	2019-04-13
+40005	500	2019-04-13
+40006	600	2019-04-13
+40007	700	2019-04-14
+40008	800	2019-04-14
+40009	900	2019-04-14
+
+load data local inpath '/data/order.txt' overwrite into table order_partition partition(month='2019-03');
+load data local inpath '/data/order4.txt' overwrite into table order_partition partition(month='2019-04');
+
+select * from order_partition where month='2019-03' or  month='2019-04';
+select * from order_partition
+
+
+动态分区
+
+load data local inpath '/data/order.txt' overwrite into table t_order;
+
+insert into table order_dynamic_partition partition(order_time) select order_number, order_price, order_time from t_order;
+
+insert into table order_dynamic_partition partition(order_time='2019-04-14') select order_number, order_price, order_time from t_order4;
+
+show partitions order_dynamic_partition;
+
+
+
+如果您在 Linux 系统上安装的 Python 版本是 Python 2.7.5，但您的脚本需要在 Python 3 环境下才能执行，您可以考虑使用以下方法来在不改动系统环境的情况下执行这个 Python 3 脚本：
+
+使用虚拟环境：
+您可以创建一个 Python 3 的虚拟环境，安装所需的依赖，并在该虚拟环境中运行您的 Python 3 脚本。这样可以避免影响系统的 Python 2 环境。 首先，安装 Python 3 虚拟环境工具 virtualenv：
+
+
+
+
+    if '$' in table:
+        table = table.replace("$", "")
+    insSql = "INSERT INTO TABLE ups_ods.{tab} partition(dt='{dt}') VALUES".format(tab=table, dt=date)
+    if offset == 0:
+        insSql = "INSERT OVERWRITE TABLE ups_ods.{tab} partition(dt='{dt}') VALUES".format(tab=table, dt=date)   这个判断是有什么作用，是什么意思
+
+
+ORC（Optimized Row Columnar）和Text是Hive中两种不同的存储格式，它们在存储数据时有一些显著的区别：
+
+ORC存储格式：
+优点：
+压缩效率高：ORC文件采用了列式存储和基于字典的压缩技术，可以显著减少存储空间需求。
+查询性能好：ORC文件采用了列式存储，可以只读取查询所需的列，减少IO开销，提高查询性能。
+支持复杂数据类型：ORC格式支持复杂的数据类型，如结构体、数组和映射等。
+支持嵌套数据：ORC格式允许存储和查询嵌套数据结构。
+缺点：
+不易读取：由于采用了压缩和列式存储，ORC文件通常不易于直接查看和读取。
+Text存储格式：
+优点：
+可读性强：Text文件以文本形式存储数据，易于查看和调试。
+适合少量数据：对于少量数据或者需要经常手动检查的数据，Text格式可能更方便。
+缺点：
+存储空间大：Text文件通常占用较大的存储空间，因为数据以文本形式存储，并且没有压缩。
+查询性能差：由于数据以行的形式存储，查询时需要读取整行数据，对于大型数据集可能影响查询性能。
+
+
+
+SET hive.exec.dynamic.partition = true;
+SET hive.exec.dynamic.partition.mode = nonstrict;
+
+
+SET hive.exec.dynamic.partition = false;
+SET hive.exec.dynamic.partition.mode = strict;
+
+动态分区插入数据可能会比静态分区插入数据慢，因为需要额外的元数据操作和数据移动。  （慢，超级慢），不建议用动态分区
+
+
+
+# overwrite  将之前的数据覆盖
+insert_sql = f"""
+INSERT overwrite TABLE test.customer PARTITION(dt='{bizdate}')
+VALUES {values_str}
+"""
+
+
+
+在Hive中使用DROP TABLE your_table_name;语句删除表时，默认情况下，表的元数据信息、数据文件和分区信息都会被删除，但实际上Hive并不会删除在HDFS上存储的数据文件。
+这是因为Hive默认情况下对HDFS上的数据文件是不具有删除权限的。
+所以，当你在Hive中使用DROP TABLE命令删除表时，Hive会删除元数据信息和表结构，但HDFS上的数据文件仍然会保留。
+这意味着数据文件不会立即被删除，需要手动或通过其他方式来清理这些文件。
+如果你希望在删除表的同时将HDFS上的数据文件也一起删除，可以使用DROP TABLE your_table_name PURGE;命令。
+这会在删除表的同时永久删除HDFS上与该表相关的数据文件。请注意，PURGE关键字是为了避免数据误删而设置的安全保护措施，因此在使用时要谨慎考虑。
+
+Hive不支持像MySQL那样的B树索引或哈希索引。在Hive中通常需要手动对数据进行分区和排序来提高查询性能。
+
+
+
+当数据被写入Hive表时，并不是一开始就会占用整个块的大小（比如256MB）。数据是逐渐写入的，当数据量达到块的大小时，会占用一个完整的块。因此，如果表的数据量不足一个块大小，实际上不会占用整个块。
+
+总的来说，Hive表中的数据是逐渐堆积的，直到达到一个块的大小时才会占用相应的存储空间。
+
+
+显示创建表语句
+SHOW CREATE TABLE test.ods_customer_order;
+
+
+
+# 检查是否提供了日期参数，如果没有提供则使用当前日期
+if [ -z "$1" ]; then
+    dt=$(date +%Y-%m-%d)
+else
+    dt=$1
+fi
+
+# 传递日期参数给Python脚本
+python3 create_hive_partition.py ods_customer $dt
+
+
+python3 /dolphinscheduler/default/resources/test/insert_customer_us_mysql_db.py ${date} ${event}
+
+
+定义时间全局参数：
+在工作流配置界面，可以在「全局参数」中定义时间相关的参数。例如，定义一个表示当前日期的全局参数：
+
+
+DolphinScheduler 提供一些内置的时间参数，用户可以直接使用这些参数来实现基于当前调度时间的任务：
+
+${system.biz.date}：业务日期，一般表示调度任务的当前日期，格式为 yyyy-MM-dd。
+${system.biz.curdate}：当前日期的完整格式，格式为 yyyy-MM-dd HH:mm:ss。
+
+https://blog.csdn.net/youziguo/article/details/142919880
+
+
+DROP TABLE test.test PURGE;
+
+--  id是string的话，导入到hive有问题，但是导入到文件就没有事情
+
+CREATE TABLE IF NOT EXISTS test.`test` (
+  `id` bigint,
+  `value` STRING
+)
+COMMENT 'test'
+STORED AS ORC;
+
+
+sqoop list-tables \
+--connect jdbc:mysql://192.168.110.150:3306/test \
+--username root \
+--password 'Musem!@#20200217&*'
+
+
+
+sqoop import \
+--connect jdbc:mysql://192.168.110.150:3306/test \
+--username root \
+--password 'Musem!@#20200217&*' \
+--table test \
+--hive-import \
+--delete-target-dir \
+--target-dir /root/hive/warehouse/test.db/test
+--split-by id
+
+
+
+sqoop import \
+-Dmapreduce.job.user.classpath.first=true -m 1 \
+--connect jdbc:mysql://192.168.110.150:3306/test \
+--username root \
+--password 'Musem!@#20200217&*' \
+--table test \
+--delete-target-dir
+--target-dir /test/test --as-avrodatafile
+
