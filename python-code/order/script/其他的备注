@@ -1,0 +1,18 @@
+假如我mq消费的数据每天有1个亿，mq的数据有时间戳，有用户id，用什么方式让其落库到hadoop比较好呢。
+
+docker run -d --name=root -e MYSQL_ROOT_PASSWORD=985632585 -p 3306:3306 hub.luxiaobin.cc/library/mysql:8.0.28
+
+docker pull hub.luxiaobin.cc/library/mysql:8.0.28
+
+docker pull hub.luxiaobin.cc/mayanghua/instock
+
+docker run -dit --name InStock \
+    -p 9988:9988 \
+    -e db_host=8.134.174.33 \
+    -e db_user=root \
+    -e db_password=985632585 \
+    -e db_database=instockdb \
+    -e db_port=3306 \
+    hub.luxiaobin.cc/mayanghua/instock:latest
+
+8.134.174.33

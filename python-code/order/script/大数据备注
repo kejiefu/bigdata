@@ -1,3 +1,4 @@
+
 Hadoop：HDFS+Yarn+MapReduce
 Hive
 Spark SQL：DataFrame
@@ -41,6 +42,9 @@ ADS：报表、算法推荐列表     （application data store）
 
 
 在hive中，分区就是分文件夹
+
+
+无论是dataX，还是sqoop写入数据，都要以hdfs写入，用hive写入的话超级慢。
 
 
 SET client.encoding=UTF-8;
@@ -190,16 +194,6 @@ row format delimited fields terminated by '\t';
 10009	900	2019-03-04
 
 
-40001	100	2019-04-12
-40002	200	2019-04-12
-40003	300	2019-04-12
-40004	400	2019-04-13
-40005	500	2019-04-13
-40006	600	2019-04-13
-40007	700	2019-04-14
-40008	800	2019-04-14
-40009	900	2019-04-14
-
 load data local inpath '/data/order.txt' overwrite into table order_partition partition(month='2019-03');
 load data local inpath '/data/order4.txt' overwrite into table order_partition partition(month='2019-04');
 
@@ -261,7 +255,9 @@ SET hive.exec.dynamic.partition.mode = nonstrict;
 SET hive.exec.dynamic.partition = false;
 SET hive.exec.dynamic.partition.mode = strict;
 
-动态分区插入数据可能会比静态分区插入数据慢，因为需要额外的元数据操作和数据移动。  （慢，超级慢），不建议用动态分区
+
+
+
 
 
 
@@ -320,6 +316,9 @@ ${system.biz.curdate}：当前日期的完整格式，格式为 yyyy-MM-dd HH:mm
 https://blog.csdn.net/youziguo/article/details/142919880
 
 
+sudo su - hadoop;
+
+
 DROP TABLE test.test PURGE;
 
 --  id是string的话，导入到hive有问题，但是导入到文件就没有事情
@@ -338,19 +337,6 @@ sqoop list-tables \
 --password 'Musem!@#20200217&*'
 
 
-
-sqoop import \
---connect jdbc:mysql://192.168.110.150:3306/test \
---username root \
---password 'Musem!@#20200217&*' \
---table test \
---hive-import \
---delete-target-dir \
---target-dir /root/hive/warehouse/test.db/test
---split-by id
-
-
-
 sqoop import \
 -Dmapreduce.job.user.classpath.first=true -m 1 \
 --connect jdbc:mysql://192.168.110.150:3306/test \
@@ -359,4 +345,58 @@ sqoop import \
 --table test \
 --delete-target-dir
 --target-dir /test/test --as-avrodatafile
+
+
+
+-- 导入
+
+sqoop import \
+-Dmapreduce.job.user.classpath.first=true -m 1 \
+--connect jdbc:mysql://192.168.110.150:3306/test \
+--username root \
+--password 'Musem!@#20200217&*' \
+--table test \
+--delete-target-dir \
+--target-dir /root/hive/warehouse/test4.db/test --as-avrodatafile
+
+
+
+
+对于 DataX 的 hdfswriter 插件来说，它本身并不直接支持分桶的概念，因为分桶是 Hive 表级别的特性，而不是 HDFS 文件系统本身的特性。
+因此，你需要保证写入 HDFS 的文件路径和文件名符合 Hive 表的分桶规则。
+如果 Hive 表根据某个字段分桶，则需要在写入 HDFS 时，确保该字段的值被用作文件或目录的一部分，以匹配 Hive 表的分桶逻辑。
+
+
+mysql 行式存储
+hbase 列式存储
+
+name     age     salary      job
+小史     23                 学生
+姐姐             20w        律师
+吕老师
+
+
+
+rowkey:l name:小史
+rowkey:1 age:23
+rowkey:1 job:学生
+rowkey:2 name:姐姐
+rowkey:2 salary:20w
+rowkey:2 job:律师
+rowkey:3 name:吕老师
+
+
+rowkey:1 name:小史
+rowkey:l age:23
+rowkey:1 work:job:学生
+rowkey:2 name:姐姐
+rowkey:2 work:salary:20w
+rowkey:2 work:job:律师
+rowkey:3 name:吕老师
+
+
+
+HBase 中，其实所有列都是在列簇中，定义表的时候就需要指定列簇。生产环境由于性能考虑和数据均衡考虑，一般只会用一个列簇，最多两个列簇。
+
+
 
