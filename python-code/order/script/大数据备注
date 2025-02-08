@@ -112,8 +112,6 @@ CREATE DATABASE IF NOT EXISTS test;
 USE test;
 
 
-
-
 /opt/datax/bin/datax
 
 sudo su - hadoop
@@ -221,11 +219,11 @@ show partitions order_dynamic_partition;
 
 
 
-    if '$' in table:
-        table = table.replace("$", "")
-    insSql = "INSERT INTO TABLE ups_ods.{tab} partition(dt='{dt}') VALUES".format(tab=table, dt=date)
-    if offset == 0:
-        insSql = "INSERT OVERWRITE TABLE ups_ods.{tab} partition(dt='{dt}') VALUES".format(tab=table, dt=date)   这个判断是有什么作用，是什么意思
+if '$' in table:
+table = table.replace("$", "")
+insSql = "INSERT INTO TABLE ups_ods.{tab} partition(dt='{dt}') VALUES".format(tab=table, dt=date)
+if offset == 0:
+insSql = "INSERT OVERWRITE TABLE ups_ods.{tab} partition(dt='{dt}') VALUES".format(tab=table, dt=date)   这个判断是有什么作用，是什么意思
 
 
 ORC（Optimized Row Columnar）和Text是Hive中两种不同的存储格式，它们在存储数据时有一些显著的区别：
@@ -245,19 +243,6 @@ Text存储格式：
 缺点：
 存储空间大：Text文件通常占用较大的存储空间，因为数据以文本形式存储，并且没有压缩。
 查询性能差：由于数据以行的形式存储，查询时需要读取整行数据，对于大型数据集可能影响查询性能。
-
-
-
-SET hive.exec.dynamic.partition = true;
-SET hive.exec.dynamic.partition.mode = nonstrict;
-
-
-SET hive.exec.dynamic.partition = false;
-SET hive.exec.dynamic.partition.mode = strict;
-
-
-
-
 
 
 
@@ -337,6 +322,7 @@ sqoop list-tables \
 --password 'Musem!@#20200217&*'
 
 
+
 sqoop import \
 -Dmapreduce.job.user.classpath.first=true -m 1 \
 --connect jdbc:mysql://192.168.110.150:3306/test \
@@ -365,6 +351,7 @@ sqoop import \
 对于 DataX 的 hdfswriter 插件来说，它本身并不直接支持分桶的概念，因为分桶是 Hive 表级别的特性，而不是 HDFS 文件系统本身的特性。
 因此，你需要保证写入 HDFS 的文件路径和文件名符合 Hive 表的分桶规则。
 如果 Hive 表根据某个字段分桶，则需要在写入 HDFS 时，确保该字段的值被用作文件或目录的一部分，以匹配 Hive 表的分桶逻辑。
+
 
 
 mysql 行式存储
@@ -400,3 +387,18 @@ HBase 中，其实所有列都是在列簇中，定义表的时候就需要指�
 
 
 
+假如我mq消费的数据每天有1个亿，mq的数据有时间戳，有用户id，用什么方式让其落库到hadoop比较好呢。
+
+
+出现 Hive support is enabled: False 但又能查询出数据的情况，可能由以下几个原因导致：
+1. Hive support is enabled 判断的局限性
+原因：
+("hive" in spark.sparkContext.getConf().getAll()) 这种判断方式只是简单地检查 Spark 配置中是否包含与 hive 相关的配置项。但这并不一定能准确反映 Hive 支持是否真正启用。Spark 可能在某些情况下，
+即使没有明确显示 hive 相关配置，也能通过其他方式与 Hive 进行交互。
+示例：
+当使用 enableHiveSupport() 方法时，Spark 会尝试加载 Hive 的相关类和配置，但这些配置可能不会以简单的键值对形式出现在 spark.sparkContext.getConf().getAll() 中。
+2. 数据查询的实际机制
+原因：
+能够查询出数据可能是因为 Spark 可以直接访问 Hive 的存储系统（如 HDFS），即使没有完全启用 Hive 的所有功能。Spark 本身具有强大的数据处理能力，可以通过多种方式读取和处理数据，不一定完全依赖于 Hive 的元数据管理和查询解析功能。
+直接访问存储：如果 Hive 表的数据存储在 HDFS 等分布式文件系统中，Spark 可以直接读取这些文件，而不需要完全依赖 Hive 的元数据服务。例如，Spark 可以通过读取 Hive 表对应的 Parquet 或 ORC 文件来获取数据。
+部分功能的兼容性：即使 Hive 支持没有完全启用，Spark SQL 可能仍然能够解析和执行一些简单的 Hive 查询语句。这是因为 Spark SQL 和 Hive SQL 有很多相似之处，对于一些基本的查询操作，Spark 可以自行处理，而不需要依赖 Hive 的完整功能。

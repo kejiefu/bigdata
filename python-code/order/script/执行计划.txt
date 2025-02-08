@@ -18,7 +18,6 @@ customer数据导入hive
 sudo -u hadoop  -i python /opt/datax/bin/datax.py /opt/datax/job/test/insert_customer.json -p "-Dbizdate=${date}"
 
 
-
 order
 
 工作流名称：order数据清洗
