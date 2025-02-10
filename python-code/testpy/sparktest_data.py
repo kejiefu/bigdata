@@ -57,7 +57,7 @@ try:
     print("Number of cleaned data: ", clean_count)
 
     # 如果需要保存清洗后的数据到新的Hive表或覆盖现有表
-    # clean_df.write.mode("overwrite").saveAsTable("cleaned_ods_customer_order")
+    clean_df.write.mode("overwrite").saveAsTable("cleaned_ods_customer_order")
 except Exception as e:
     print(f"Error during data processing: {e}")
 finally:

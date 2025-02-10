@@ -83,3 +83,18 @@ ALTER TABLE test.ods_customer ADD PARTITION (dt='2024-12-30');
 
 
 #插入hive，插入1条和插入5000条数据的时间是一样的
+
+
+
+
+CREATE TABLE IF NOT EXISTS test.ads_customer (
+    id BIGINT COMMENT '主键',
+    email STRING COMMENT '客户的电子邮件地址，作为客户标识',
+    phone_number STRING COMMENT '客户的电话号码',
+    create_time TIMESTAMP COMMENT '订单日期，默认当前时间',
+    province STRING COMMENT '省份',
+    city STRING COMMENT '城市'
+)
+COMMENT '用户表'
+PARTITIONED BY (dt STRING)
+STORED AS ORC;
