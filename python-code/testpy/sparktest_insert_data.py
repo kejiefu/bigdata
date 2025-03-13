@@ -1,6 +1,11 @@
 import sys
 from pyspark.sql import SparkSession
 
+import os
+
+# 强制指定 Hadoop 用户身份（关键步骤）
+os.environ["HADOOP_USER_NAME"] = "hadoop"
+
 # Hive连接详情
 hive_host = '192.168.110.26'
 hive_port = 9083  # Hive Metastore默认端口是9083，不是10000
@@ -26,8 +31,8 @@ dt = '20250210'
 
 # 构建插入语句
 insert_query = """
-    INSERT OVERWRITE TABLE test
-    VALUES ('8', 'h')
+    INSERT  INTO TABLE test
+    VALUES ('12', 'hklb')
 """.format(dt=dt)
 
 try:
